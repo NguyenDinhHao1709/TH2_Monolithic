@@ -1,0 +1,397 @@
+{
+  "info": {
+    "_postman_id": "b2c3d4e5-f6a7-4819-90b1-c2d3e4f5a6b7",
+    "name": "E-Commerce Monolith MVP (P2) - Full Test Suite",
+    "description": "Tập hợp đầy đủ 17 Test Cases kiểm thử toàn diện hệ thống E-Commerce MVP (Express + Prisma + PostgreSQL) tại cổng 5000",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "customer_token", "value": "", "type": "string" },
+    { "key": "created_pid", "value": "1", "type": "string" },
+    { "key": "temp_pid", "value": "1", "type": "string" },
+    { "key": "created_oid", "value": "1", "type": "string" },
+    { "key": "test_username", "value": "cust_postman", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. System & Health (1 Test Case)",
+      "item": [
+        {
+          "name": "TC-P2-SYS-01: Health Check (API & PostgreSQL)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                "var json = pm.response.json();",
+                "pm.test('API is healthy and DB is connected', function () { pm.expect(json.status).to.eql('OK'); pm.expect(json.database).to.eql('connected'); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Authentication & Authorization (6 Test Cases)",
+      "item": [
+        {
+          "name": "TC-P2-AUTH-01: Đăng ký Customer mới hợp lệ (201)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 201 Created', function () { pm.response.to.have.status(201); });",
+                "var json = pm.response.json();",
+                "pm.test('User created with uid', function () { pm.expect(json.user.uid).to.not.be.undefined; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{test_username}}\",\n  \"fullname\": \"Nguyen Van Postman\",\n  \"password\": \"password123\",\n  \"roleid\": 2,\n  \"mid\": 1\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/register", "host": ["{{base_url}}"], "path": ["api", "auth", "register"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-AUTH-02: Đăng ký username đã tồn tại (409)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 409 Conflict', function () { pm.response.to.have.status(409); });",
+                "pm.test('Error message mentions username exists', function () { pm.expect(pm.response.json().message).to.include('exists'); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{test_username}}\",\n  \"fullname\": \"Duplicate User\",\n  \"password\": \"password123\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/register", "host": ["{{base_url}}"], "path": ["api", "auth", "register"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-AUTH-03: Đăng ký thiếu password (400)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 400 Bad Request', function () { pm.response.to.have.status(400); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"nopass_user\",\n  \"fullname\": \"No Password\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/register", "host": ["{{base_url}}"], "path": ["api", "auth", "register"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-AUTH-04: Đăng nhập Admin thành công (200 + Lưu JWT)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                "var json = pm.response.json();",
+                "pm.test('Token returned', function () { pm.expect(json.token).to.not.be.empty; });",
+                "if (json.token) { pm.collectionVariables.set('token', json.token); }"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-AUTH-05: Đăng nhập Customer vừa tạo (200)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                "var json = pm.response.json();",
+                "if (json.token) { pm.collectionVariables.set('customer_token', json.token); }"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{test_username}}\",\n  \"password\": \"password123\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-AUTH-06: Đăng nhập sai mật khẩu (401)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 401 Unauthorized', function () { pm.response.to.have.status(401); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"wrong_password\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Products Management (5 Test Cases)",
+      "item": [
+        {
+          "name": "TC-P2-PROD-01: Lấy danh sách sản phẩm - Public (200)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                "pm.test('Response is an array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/products", "host": ["{{base_url}}"], "path": ["api", "products"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-PROD-02: Thêm mới sản phẩm có JWT Token (201)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 201 Created', function () { pm.response.to.have.status(201); });",
+                "var json = pm.response.json();",
+                "pm.test('Product has pid', function () { pm.expect(json.pid).to.not.be.undefined; });",
+                "if (json.pid) { pm.collectionVariables.set('created_pid', String(json.pid)); }"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pname\": \"Mechanical Keyboard RGB Custom\",\n  \"price\": 120.00,\n  \"quantity\": 50\n}" },
+            "url": { "raw": "{{base_url}}/api/products", "host": ["{{base_url}}"], "path": ["api", "products"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-PROD-03: Thêm sản phẩm KHÔNG gửi token (401)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 401 Unauthorized', function () { pm.response.to.have.status(401); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pname\": \"Unauthorized Product\",\n  \"price\": 50,\n  \"quantity\": 10\n}" },
+            "url": { "raw": "{{base_url}}/api/products", "host": ["{{base_url}}"], "path": ["api", "products"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-PROD-04: Lấy chi tiết sản phẩm hợp lệ (200)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                "var json = pm.response.json();",
+                "pm.test('Matching product pid', function () { pm.expect(String(json.pid)).to.eql(pm.collectionVariables.get('created_pid')); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/products/{{created_pid}}", "host": ["{{base_url}}"], "path": ["api", "products", "{{created_pid}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-PROD-05: Cập nhật giá & tồn kho sản phẩm (200)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                "var json = pm.response.json();",
+                "pm.test('Quantity updated to 45', function () { pm.expect(json.quantity).to.eql(45); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"price\": 110.00,\n  \"quantity\": 45\n}" },
+            "url": { "raw": "{{base_url}}/api/products/{{created_pid}}", "host": ["{{base_url}}"], "path": ["api", "products", "{{created_pid}}"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Orders & Shipments (5 Test Cases)",
+      "item": [
+        {
+          "name": "TC-P2-ORD-01: Đặt hàng hợp lệ - Transaction nguyên tử (201)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 201 Created', function () { pm.response.to.have.status(201); });",
+                "var json = pm.response.json();",
+                "pm.test('Order details created', function () { pm.expect(json.order.orderDetails.length).to.be.above(0); });",
+                "pm.test('Shipment created with Pending', function () { pm.expect(json.order.shipments[0].status).to.eql('Pending'); });",
+                "if (json.order && json.order.oid) { pm.collectionVariables.set('created_oid', String(json.order.oid)); }"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    {\n      \"pid\": {{created_pid}},\n      \"qty\": 2\n    }\n  ]\n}" },
+            "url": { "raw": "{{base_url}}/api/orders", "host": ["{{base_url}}"], "path": ["api", "orders"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-ORD-02: Đặt hàng KHÔNG có JWT token (401)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 401 Unauthorized', function () { pm.response.to.have.status(401); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [{ \"pid\": 1, \"qty\": 1 }]\n}" },
+            "url": { "raw": "{{base_url}}/api/orders", "host": ["{{base_url}}"], "path": ["api", "orders"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-ORD-03: Đặt số lượng vượt quá tồn kho (400)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 400 Bad Request', function () { pm.response.to.have.status(400); });",
+                "pm.test('Error mentions insufficient stock', function () { pm.expect(pm.response.json().message).to.include('Insufficient stock'); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    {\n      \"pid\": {{created_pid}},\n      \"qty\": 9999\n    }\n  ]\n}" },
+            "url": { "raw": "{{base_url}}/api/orders", "host": ["{{base_url}}"], "path": ["api", "orders"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-ORD-04: Đặt sản phẩm không tồn tại (400)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 400 Bad Request', function () { pm.response.to.have.status(400); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    {\n      \"pid\": 999999,\n      \"qty\": 1\n    }\n  ]\n}" },
+            "url": { "raw": "{{base_url}}/api/orders", "host": ["{{base_url}}"], "path": ["api", "orders"] }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-P2-ORD-05: Lấy danh sách đơn hàng của người dùng (200)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                "pm.test('Orders array returned', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }],
+            "url": { "raw": "{{base_url}}/api/orders", "host": ["{{base_url}}"], "path": ["api", "orders"] }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "ecommerce-mvp-api",
+  "version": "1.0.0",
+  "description": "E-Commerce MVP RESTful API with Express, Prisma, PostgreSQL and JWT",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node test.js",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "node prisma/seed.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "prisma": "^6.4.1"
+  }
+}
